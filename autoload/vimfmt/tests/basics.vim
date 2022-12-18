@@ -110,6 +110,27 @@ function! s:legacy_run_tests() abort
     \ 'let x = 2']))
 
   call assert_equal([
+    \ 'augroup xxx',
+    \ '  autocmd!',
+    \ '  autocmd FileType vim',
+    \ '    \ : if 1',
+    \ '    \ |     echo 1234',
+    \ '    \ | else',
+    \ '    \ |     echo 5678',
+    \ '    \ | endif',
+    \ 'augroup END',
+    \ ], vimfmt#core#format([
+    \ 'augroup xxx',
+    \ 'autocmd!',
+    \ 'autocmd FileType vim',
+    \ '\ : if 1',
+    \ '\ |     echo 1234',
+    \ '\ | else',
+    \ '\ |     echo 5678',
+    \ '\ | endif',
+    \ 'augroup END']))
+
+  call assert_equal([
     \ 'let xs = [',
     \ '  \ 1,',
     \ '  \ 2,',
@@ -126,11 +147,52 @@ function! s:legacy_run_tests() abort
     \ 'let hgoe =<< trim eval END',
     \ '        text text',
     \ 'text text',
+    \ '    text text',
     \ 'END'
     \ ], vimfmt#core#format([
     \ '  let hgoe =<< trim eval END',
     \ '        text text',
     \ 'text text',
+    \ '    text text',
+    \ 'END']))
+
+  call assert_equal([
+    \ 'var hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END'
+    \ ], vimfmt#core#format([
+    \ '  var hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END']))
+
+  call assert_equal([
+    \ 'const hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END'
+    \ ], vimfmt#core#format([
+    \ '  const hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END']))
+
+  call assert_equal([
+    \ 'cons hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END'
+    \ ], vimfmt#core#format([
+    \ '  cons hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
     \ 'END']))
 
   call assert_equal([
@@ -168,6 +230,25 @@ function! s:legacy_run_tests() abort
     \ 'text text',
     \ '    text text',
     \ '   END',
+    \ 'echo x',
+    \ 'endif']))
+
+  call assert_equal([
+    \ 'if 1',
+    \ '  let x =<< END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END',
+    \ '  echo x',
+    \ 'endif'
+    \ ], vimfmt#core#format([
+    \ 'if 1',
+    \ '  let x =<< END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END',
     \ 'echo x',
     \ 'endif']))
 endfunction

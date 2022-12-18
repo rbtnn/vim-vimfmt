@@ -166,14 +166,16 @@ function! s:consume_command(input_chars) abort
     let xs += [a:input_chars[i]]
     let i += 1
   endwhile
-  let result = s:consume(a:input_chars, i, '[A-Za-z0-9_]')
+  let result = s:consume_varname(a:input_chars, i)
   if i < result.i
     let i = result.i
     let xs += result.xs
     let ok = v:true
   endif
   if ok
-    if s:match_command({ 'formated_text': join(xs, '') }, 'let')
+    if       s:match_command({ 'formated_text': join(xs, '') }, 'let')
+        \ || s:match_command({ 'formated_text': join(xs, '') }, 'cons', 't')
+        \ || s:match_command({ 'formated_text': join(xs, '') }, 'var')
       let result = s:consume_horedoc(a:input_chars, i)
       if i < result.i
         let i = result.i
@@ -184,11 +186,12 @@ function! s:consume_command(input_chars) abort
   return s:make_retval(ok ? i : 0, 'command', a:input_chars[:i-1], join(xs, ''))
 endfunction
 
-function! s:consume(input_chars, i, re) abort
+function! s:consume_varname(input_chars, i) abort
+  let re = '[A-Za-z0-9_]'
   let xs = []
   let i = a:i
   while v:true
-    if s:cmp_char_re(a:input_chars, i, a:re)
+    if s:cmp_char_re(a:input_chars, i, re)
       let xs += [a:input_chars[i]]
       let i += 1
     else
@@ -199,7 +202,7 @@ function! s:consume(input_chars, i, re) abort
         let k = s:many(a:input_chars, k, '\s')
         if s:cmp_char(a:input_chars, k, '\')
           let k += 1
-          if s:cmp_char_re(a:input_chars, k, a:re)
+          if s:cmp_char_re(a:input_chars, k, re)
             let xs += [a:input_chars[k]]
             let k += 1
             let ok = v:true
@@ -216,6 +219,27 @@ function! s:consume(input_chars, i, re) abort
   return { 'xs': xs, 'i': i, }
 endfunction
 
+function! s:consume_string(input_chars, i, s) abort
+  let i = a:i
+  let ok = v:true
+  let cs = split(a:s, '\zs')
+  for c in cs
+    if s:cmp_char(a:input_chars, i, c)
+      let i += 1
+    else
+      let ok = v:false
+      break
+    endif
+  endfor
+  if ok
+    return { 'xs': cs, 'i': i, }
+  else
+    return {}
+  endif
+endfunction
+
+"const {var-name} =<< [trim] [eval] {endmarker}
+"var {var-name} =<< [trim] [eval] {endmarker}
 "let {var-name} =<< [trim] [eval] {endmarker}
 "...
 "{endmarker}
@@ -227,24 +251,26 @@ function! s:consume_horedoc(input_chars, i) abort
     let xs += [a:input_chars[k]]
     let k += 1
   endwhile
-  let result = s:consume(a:input_chars, k, '[=<]')
-  if (k + 3 == result.i) && (join(result.xs, '') == '=<<')
-    let k += 3
+  let result = s:consume_string(a:input_chars, k, '=<<')
+  if !empty(result)
+    let k = result.i
     let xs += result.xs
     let k = s:many(a:input_chars, k, '\s')
-    let result = s:consume(a:input_chars, k, '[trim]')
-    if (k + 4 == result.i) && (join(result.xs, '') == 'trim')
-      let k += 4
+    let result = s:consume_string(a:input_chars, k, 'trim')
+    if !empty(result)
+      let k = result.i
       let xs += [' '] + result.xs
+      let k = s:many1(a:input_chars, k, '\s')
     endif
     let k = s:many(a:input_chars, k, '\s')
-    let result = s:consume(a:input_chars, k, '[eval]')
-    if (k + 4 == result.i) && (join(result.xs, '') == 'eval')
-      let k += 4
+    let result = s:consume_string(a:input_chars, k, 'eval')
+    if !empty(result)
+      let k = result.i
       let xs += [' '] + result.xs
+      let k = s:many1(a:input_chars, k, '\s')
     endif
     let k = s:many(a:input_chars, k, '\s')
-    let result = s:consume(a:input_chars, k, '[A-Za-z0-9_]')
+    let result = s:consume_varname(a:input_chars, k)
     if k < result.i
       let endmarker = result.xs
       let xs += [' '] + result.xs
@@ -261,15 +287,10 @@ function! s:consume_horedoc(input_chars, i) abort
           if s:cmp_char(a:input_chars, k, "\n")
             let xs += [a:input_chars[k]]
             let k += 1
-            let ok = v:true
-            for j in range(0, len(endmarker) - 1)
-              if !s:cmp_char(a:input_chars, k + j, endmarker[j])
-                let ok = v:false
-              endif
-            endfor
-            if ok
-              let xs += endmarker
-              let k += len(endmarker)
+            let result = s:consume_string(a:input_chars, k, join(endmarker, ''))
+            if !empty(result)
+              let k = result.i
+              let xs += result.xs
               if s:cmp_char(a:input_chars, k, "\n") || (len(a:input_chars) == k)
                 let i = k
                 break
