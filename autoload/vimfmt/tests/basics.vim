@@ -121,6 +121,55 @@ function! s:legacy_run_tests() abort
     \ '\ 2,',
     \ '"\ 3,',
     \ '\ ]']))
+
+  call assert_equal([
+    \ 'let hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ 'END'
+    \ ], vimfmt#core#format([
+    \ '  let hgoe =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ 'END']))
+
+  call assert_equal([
+    \ 'if 1',
+    \ '  let x =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END',
+    \ '  echo x',
+    \ 'endif'
+    \ ], vimfmt#core#format([
+    \ 'if 1',
+    \ '  let x =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ 'END',
+    \ 'echo x',
+    \ 'endif']))
+
+  call assert_equal([
+    \ 'if 1',
+    \ '  let x =<< trim eval END',
+    \ '  text text',
+    \ '  text text',
+    \ '  text text',
+    \ '  END',
+    \ '  echo x',
+    \ 'endif'
+    \ ], vimfmt#core#format([
+    \ 'if 1',
+    \ '  let x =<< trim eval END',
+    \ '        text text',
+    \ 'text text',
+    \ '    text text',
+    \ '   END',
+    \ 'echo x',
+    \ 'endif']))
 endfunction
 
 function! s:vim9_run_tests() abort
