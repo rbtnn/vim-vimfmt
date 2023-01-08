@@ -2,7 +2,7 @@
 function! vimfmt#core#format(lines, opts = {}) abort
   let opts = {
     \ 'display_progress': get(a:opts, 'display_progress', v:false),
-    \ 'indent_string': get(a:opts, 'indent_string', repeat(' ' , 2)),
+    \ 'indent_string': get(a:opts, 'indent_string', repeat(' ' , shiftwidth())),
     \ }
   let input_chars = empty(a:lines) ? [] : split(join(a:lines, "\n"), '\zs')
   let xs = s:format_step1(input_chars, opts)
